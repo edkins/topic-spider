@@ -1,6 +1,8 @@
 import urllib.request
 import nltk
 import collections
+import server
+import spidermodel
 from bs4 import BeautifulSoup
 from bs4 import element
 
@@ -30,13 +32,17 @@ def corpusFrequencies():
 				counts[word.lower()] += 1
 	return counts
 
+print('Processing corpus')
 corpusFreq = corpusFrequencies()
 
+print('Downloading')
 html = urllib.request.urlopen('https://en.wikipedia.org/wiki/Effective_altruism').read().decode('utf-8')
+print('Parsing html')
 soup = BeautifulSoup(html,'html.parser')
 
 text = ' '.join(buildSoupString(soup,0).split())
 
+print('Tokenizing')
 tokens = nltk.word_tokenize(text)
 counts = collections.Counter()
 for token in tokens:
@@ -48,5 +54,8 @@ for token in counts:
 	score = -counts[token] / (corpusFreq[token] + 1)
 	listResult.append((score, token))
 
-for (score,word) in sorted(listResult)[0:200]:
-	print(word + ' ' * (20 - len(word)) + '*' * int(-2*score))
+print('Adding scored keywords to model.')
+spidermodel.addScoredKeywords( listResult )
+
+server.start()
+
