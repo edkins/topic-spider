@@ -1,5 +1,6 @@
 import http.server
 import spidermodel
+import json
 
 def radio(name,value,onchange):
 	return '<input type="radio" name="' + name + '" value="' + value + '" onchange="'+onchange+'">'
@@ -18,14 +19,17 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 			return http.server.SimpleHTTPRequestHandler.do_GET(s)
 
 	def do_POST(s):
-		if s.path == '/relevance':
+		if s.path == '/v1/relevance':
 			s.setRelevance()
 
 	def setRelevance(s):
-		print(s.rfile.readlines())
-		s.send_response(500)
-		s.send_header("Content-type", "text/html")
+		length = int(s.headers['content-length'])
+		relevances = json.loads(s.rfile.read(length).decode('utf-8'))
+		spidermodel.setRelevances(relevances)
+		s.send_response(200)
+		s.send_header("Content-type", "application/json")
 		s.end_headers()
+		s.writeln('{}')
 
 	def getUnrankedKeywords(s):
 		s.send_response(200)
@@ -41,13 +45,10 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 		s.writeln('</head>')
 		s.writeln('<body>')
 		s.writeln('<h1>Which topics are relevant?</h1>')
-		s.writeln('<form action="/relevance" method="post">')
-		s.writeln('<input type="submit"><br>')
 		s.writeln('yes/no<br>')
 		keywords = spidermodel.topUnrankedKeywords(100)
 		for keyword in keywords:
 			s.writeln(radio(keyword.word,'yes','changeRank(event)') + radio(keyword.word,'no','changeRank(event)') +' ' + keyword.word + image('loading-' + keyword.word, '/static/pageloader.gif',16,16,'hidden') + '<br>')
-		s.writeln('</form>')
 		s.writeln('</body></html>')
 
 def start():
