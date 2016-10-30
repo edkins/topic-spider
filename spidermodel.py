@@ -4,6 +4,7 @@ class Keyword:
 	def __init__(self, score, word):
 		self.score = score
 		self.word = word
+		self.relevance = None
 
 	def __lt__(self, other):
 		return self.score < other.score
@@ -15,3 +16,5 @@ def addScoredKeywords( newKeywords ):
 def topKeywords( count ):
 	return sorted(keywords)[0:count]
 
+def topUnrankedKeywords( count ):
+	return [ kw for kw in sorted(keywords) if kw.relevance == None ]
