@@ -1,3 +1,4 @@
 garbage/
 __pycache__/
 *.swp
+data/keywords.json

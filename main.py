@@ -32,30 +32,35 @@ def corpusFrequencies():
 				counts[word.lower()] += 1
 	return counts
 
-print('Processing corpus')
-corpusFreq = corpusFrequencies()
+def obtainData():
+	print('Processing corpus')
+	corpusFreq = corpusFrequencies()
 
-print('Downloading')
-html = urllib.request.urlopen('https://en.wikipedia.org/wiki/Effective_altruism').read().decode('utf-8')
-print('Parsing html')
-soup = BeautifulSoup(html,'html.parser')
+	print('Downloading')
+	html = urllib.request.urlopen('https://en.wikipedia.org/wiki/Effective_altruism').read().decode('utf-8')
+	print('Parsing html')
+	soup = BeautifulSoup(html,'html.parser')
 
-text = ' '.join(buildSoupString(soup,0).split())
+	text = ' '.join(buildSoupString(soup,0).split())
 
-print('Tokenizing')
-tokens = nltk.word_tokenize(text)
-counts = collections.Counter()
-for token in tokens:
-	if acceptToken(token):
-		counts[token.lower()] += 1
+	print('Tokenizing')
+	tokens = nltk.word_tokenize(text)
+	counts = collections.Counter()
+	for token in tokens:
+		if acceptToken(token):
+			counts[token.lower()] += 1
 
-listResult = []
-for token in counts:
-	score = -counts[token] / (corpusFreq[token] + 1)
-	listResult.append((score, token))
+	listResult = []
+	for token in counts:
+		score = -counts[token] / (corpusFreq[token] + 1)
+		listResult.append((score, token))
 
-print('Adding scored keywords to model.')
-spidermodel.addScoredKeywords( listResult )
+	print('Adding scored keywords to model.')
+	spidermodel.addScoredKeywords( listResult )
+	spidermodel.storeData()
+
+if not spidermodel.loadData():
+	obtainData()
 
 server.start()
 
