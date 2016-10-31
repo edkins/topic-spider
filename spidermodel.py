@@ -40,11 +40,15 @@ class Keyword:
 			data['relevance'] = self.relevance
 		return data
 
-def addScoredKeywords( newKeywords ):
-	"Add (score,keyword) pairs. A lower score is listed first."
-	for (score,word) in newKeywords:
+def resetScoresToZero():
+	for kw in keywords.values():
+		kw.score = 0
+
+def addKeywordScore(word,score):
+	if word not in keywords:
 		keywords[word] = Keyword({'score':score,'word':word})
-	storeKeywordData()
+	else:
+		keywords[word].score += score
 
 def topKeywords( count, relevancePred ):
 	return [ kw for kw in sorted(keywords.values()) if relevancePred(kw.relevance) ][0:count]

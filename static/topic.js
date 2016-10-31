@@ -76,6 +76,7 @@ function showDocuments(type)
 		{
 			var doc = response[i];
 			elements.push( doc.url + ' ' + doc.score );
+			elements.push( $('<br>') );
 		}
 		$('#content').empty();
 		$('#content').append(elements);
@@ -109,10 +110,36 @@ function spider()
 {
 	var url = $('#spider-url').val();
 	var json = JSON.stringify({url:url});
-	$.ajax('/v1/spider', {
+	$.ajax('/v1/spider/visit', {
 		'method': 'post',
 		'content-type': 'application/json',
 		'data': json
 	});
 }
 
+function resumeSpider()
+{
+	$.ajax('/v1/spider/resume', {
+		'method': 'post',
+		'content-type': 'application/json',
+		'data': '{}'
+	});
+}
+
+function stopSpider()
+{
+	$.ajax('/v1/spider/stop', {
+		'method': 'post',
+		'content-type': 'application/json',
+		'data': '{}'
+	});
+}
+
+function recalculateKeywordFrequencies()
+{
+	$.ajax('/v1/spider/stopAndRecalculate', {
+		'method': 'post',
+		'content-type': 'application/json',
+		'data': '{}'
+	});
+}

@@ -40,35 +40,10 @@ def obtainCorpusData():
 	print('Processing corpus')
 	spidermodel.setCorpusFreqs(corpusFrequencies())
 
-def obtainKeywordData():
-	print('Downloading')
-	html = urllib.request.urlopen('https://en.wikipedia.org/wiki/Effective_altruism').read().decode('utf-8')
-	print('Parsing html')
-	soup = BeautifulSoup(html,'html.parser')
-
-	text = ' '.join(buildSoupString(soup,0).split())
-
-	print('Tokenizing')
-	tokens = nltk.word_tokenize(text)
-	counts = collections.Counter()
-	for token in tokens:
-		if acceptToken(token):
-			counts[token.lower()] += 1
-
-	listResult = []
-	for token in counts:
-		score = -counts[token] / (spidermodel.corpusFreq(token) + 1)
-		listResult.append((score, token))
-
-	print('Adding scored keywords to model.')
-	spidermodel.addScoredKeywords( listResult )
-
 if not spidermodel.loadCorpusData():
 	obtainCorpusData()
 
-if not spidermodel.loadKeywordData():
-	obtainKeywordData()
-
+spidermodel.loadKeywordData()
 spidermodel.loadDocData()
 
 server.start()

@@ -37,18 +37,48 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 	def do_POST(s):
 		if s.path == '/v1/relevance':
 			s.setRelevance()
-		elif s.path == '/v1/spider':
+		elif s.path == '/v1/spider/visit':
 			s.spider()
+		elif s.path == '/v1/spider/resume':
+			s.resumeSpider()
+		elif s.path == '/v1/spider/stop':
+			s.stopSpider()
+		elif s.path == '/v1/spider/stopAndRecalculate':
+			s.stopSpiderAndRecalculate()
 
 	def getDocuments(s, docType):
 		docs = []
 		if docType == 'visited':
 			docs = document.visitedDocumentsWithScores(100)
+		elif docType == 'unvisited':
+			docs = document.unvisitedUrlsWithScores(100)
 		else:
 			raise ValueError('Unrecognized document type: ' + str(docType) )
 		s.forJson()
 		jsonText = json.dumps( [doc.toDict() for doc in docs] )
 		s.writeln(jsonText)
+
+	def resumeSpider(s):
+		engine.resumeSpider()
+		s.send_response(200)
+		s.send_header("Content-type", "application/json")
+		s.end_headers()
+		s.writeln('{}')
+
+	def stopSpider(s):
+		engine.stopSpider()
+		s.send_response(200)
+		s.send_header("Content-type", "application/json")
+		s.end_headers()
+		s.writeln('{}')
+
+	def stopSpiderAndRecalculate(s):
+		engine.stopSpider()
+		document.recalculateKeywordFrequencies()
+		s.send_response(200)
+		s.send_header("Content-type", "application/json")
+		s.end_headers()
+		s.writeln('{}')
 
 	def spider(s):
 		length = int(s.headers['content-length'])

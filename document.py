@@ -83,17 +83,19 @@ def visit(url):
 	print('Visiting ' + url)
 	doc = fromUrl(url)
 	spidermodel.putDocument(doc)
+	addKeywordScores(doc)
+	spidermodel.storeKeywordData()
 
-class ScoredDocument:
-	def __init__(self, doc, score):
-		self.doc = doc
+class ScoredUrl:
+	def __init__(self, url, score):
+		self.url = url
 		self.score = score
 
 	def __lt__(self, other):
-		return self.score < other.score
+		return self.score > other.score
 
 	def toDict(self):
-		return {'score':self.score, 'url':self.doc.url}
+		return {'score':self.score, 'url':self.url}
 
 def docScore(doc):
 	wordCount = sum(doc.wordFreq.values())
@@ -106,7 +108,53 @@ def docScore(doc):
 	return score / wordCount
 
 def scoreDocument(doc):
-	return ScoredDocument( doc, docScore(doc) )
+	return ScoredUrl( doc.url, docScore(doc) )
 
 def visitedDocumentsWithScores(count):
 	return sorted( [scoreDocument(doc) for doc in spidermodel.allDocuments()] )[0:count]
+
+def unvisitedUrlsWithScores(count):
+	urlScores = {}
+	visitedUrls = set([doc.url for doc in spidermodel.allDocuments()])
+	for doc in spidermodel.allDocuments():
+		score = docScore(doc)
+		for url in doc.links:
+			if url in visitedUrls:
+				pass
+			elif url in urlScores:
+				urlScores[url] = max(urlScores[url], score)
+			else:
+				urlScores[url] = score
+	return sorted( [ScoredUrl(url, urlScores[url]) for url in urlScores] )
+
+def obtainKeywordData(url):
+	print('Downloading')
+	html = urllib.request.urlopen(url).read().decode('utf-8')
+	print('Parsing html')
+	soup = BeautifulSoup(html,'html.parser')
+
+	text = ' '.join(buildSoupString(soup,0).split())
+
+	print('Tokenizing')
+	tokens = nltk.word_tokenize(text)
+	counts = collections.Counter()
+	for token in tokens:
+		if acceptToken(token):
+			counts[token.lower()] += 1
+
+def addKeywordScores(doc):
+	if len(spidermodel.allDocuments()) <= 1:
+		multiplier = 1
+	else:
+		multiplier = docScore(doc)
+	listResult = []
+	for word in doc.wordFreq:
+		score = doc.wordFreq[word] * multiplier / (spidermodel.corpusFreq(word) + 1)
+		spidermodel.addKeywordScore(word,score)
+
+def recalculateKeywordFrequencies():
+	spidermodel.resetScoresToZero()
+	for doc in spidermodel.allDocuments():
+		addKeywordScores(doc)
+	spidermodel.storeKeywordData()
+	print('Keyword frequencies were recalculated.')

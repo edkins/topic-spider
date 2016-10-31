@@ -8,13 +8,17 @@
 <h1>Spider</h1>
 <input id="spider-url" type="text" size=50>
 <input type="button" onclick="spider()" value="Start spider">
+<input type="button" onclick="resumeSpider()" value="Resume spider">
+<input type="button" onclick="stopSpider()" value="Stop spider">
+<input type="button" onclick="recalculateKeywordFrequencies()" value="Recalculate keyword frequencies">
 <h1>Which topics are relevant?</h1>
 <div>
 Currently marked as:
 <span id="tab-kw-unranked" class="tab active" onclick="clickTab(event)">unranked</span> | 
 <span id="tab-kw-relevant" class="tab" onclick="clickTab(event)">relevant</span> | 
 <span id="tab-kw-irrelevant" class="tab" onclick="clickTab(event)">irrelevant</span> |
-<span id="tab-doc-visited" class="tab" onclick="clickTab(event)">visited</span> 
+<span id="tab-doc-visited" class="tab" onclick="clickTab(event)">visited</span> |
+<span id="tab-doc-unvisited" class="tab" onclick="clickTab(event)">unvisited</span> 
 </div>
 <div id="content">
 </body>
