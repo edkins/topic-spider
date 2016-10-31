@@ -5,6 +5,7 @@ import urllib.robotparser
 import nltk
 import bs4
 import spidermodel
+import ssl
 
 def buildSoupString(soup, indent):
 	result = ''
@@ -89,8 +90,14 @@ def fromUrl(url):
 		return spidermodel.Document({'url':url, 'wordFreq':dict(counts), 'links':links, 'status': 'fetched', 'score':0})
 	except urllib.error.HTTPError:
 		return spidermodel.Document({'url':url, 'wordFreq':{},'links':[],'status':'failed-http'})
+	except urllib.error.URLError:
+		return spidermodel.Document({'url':url, 'wordFreq':{},'links':[],'status':'failed-url'})
 	except ssl.CertificateError:
 		return spidermodel.Document({'url':url, 'wordFreq':{},'links':[],'status':'failed-cert'})
+	except UnicodeDecodeError:
+		return spidermodel.Document({'url':url, 'wordFreq':{},'links':[],'status':'failed-unicode'})
+	except UnicodeEncodeError:
+		return spidermodel.Document({'url':url, 'wordFreq':{},'links':[],'status':'failed-unicode'})
 
 def visit(url):
 	if spidermodel.hasDocument(url):
@@ -187,7 +194,7 @@ def recalculateDocScore(doc):
 	for word in doc.wordFreq:
 		freq = doc.wordFreq[word]
 		score += freq * spidermodel.relevance(word)
-	doc.score = score / wordCount
+	doc.score = score / (wordCount + 100)
 
 def wordInfo(word,freq,wordCount):
 	relevance = spidermodel.relevance(word)
@@ -201,3 +208,9 @@ def docInfo(url):
 	wordCount = sum(doc.wordFreq.values())
 	words = [wordInfo(w, doc.wordFreq[w], wordCount) for w in doc.wordFreq]
 	return {'url':url,'status':doc.status,'words':words,'wordCount':wordCount}
+
+def goodlinks(doc,minScore):
+	return [url for url in doc.links if spidermodel.getDocument(url).score > minScore]
+
+def links(minScore):
+	return [{'url':doc.url,'score':doc.score,'links':goodlinks(doc,minScore)} for doc in spidermodel.allDocuments() if doc.score > minScore]

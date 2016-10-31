@@ -1,8 +1,15 @@
 <html>
 <head>
 <link rel="stylesheet" type="text/css" href="/static/topic.css">
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-collection.v1.min.js"></script>
+<script src="https://d3js.org/d3-dispatch.v1.min.js"></script>
+<script src="https://d3js.org/d3-quadtree.v1.min.js"></script>
+<script src="https://d3js.org/d3-timer.v1.min.js"></script>
+<script src="https://d3js.org/d3-force.v1.min.js"></script>
 <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
 <script src="/static/topic.js"></script>
+<script src="/static/graph.js"></script>
 </head>
 <body onload="onload()">
 <h1>Spider</h1>
@@ -12,7 +19,7 @@
 <input type="button" onclick="resumePolling()" value="Resume polling">
 <input type="button" onclick="stopSpider()" value="Stop spider">
 <input type="button" onclick="recalculateKeywordFrequencies()" value="Recalculate scores"><br>
-<span id="status"></span>
+<span id="status"></span><br>
 <h1>Which topics are relevant?</h1>
 <div>
 Currently marked as:
@@ -20,7 +27,8 @@ Currently marked as:
 <span id="tab-kw-relevant" class="tab" onclick="clickTab(event)">relevant</span> | 
 <span id="tab-kw-irrelevant" class="tab" onclick="clickTab(event)">irrelevant</span> |
 <span id="tab-doc-visited" class="tab" onclick="clickTab(event)">visited</span> |
-<span id="tab-doc-unvisited" class="tab" onclick="clickTab(event)">unvisited</span> 
+<span id="tab-doc-unvisited" class="tab" onclick="clickTab(event)">unvisited</span> |
+<span id="tab-links" class="tab" onclick="clickTab(event)">links</span> 
 </div>
 <div id="content">
 </body>

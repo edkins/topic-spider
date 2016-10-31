@@ -30,6 +30,8 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 			s.getDocuments( s.path[len('/v1/documents/'):] )
 		if s.path == '/v1/spider/status':
 			s.spiderStatus()
+		if s.path == '/v1/links':
+			s.getLinks()
 
 		if s.path == '/':
 			s.path = '/static/index.html'
@@ -50,6 +52,11 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 			s.stopSpider()
 		elif s.path == '/v1/spider/stopAndRecalculate':
 			s.stopSpiderAndRecalculate()
+
+	def getLinks(s):
+		s.forJson()
+		jsonText = json.dumps(document.links(0.01))
+		s.writeln(jsonText)
 
 	def getDocInfo(s):
 		length = int(s.headers['content-length'])

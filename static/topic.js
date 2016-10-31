@@ -128,6 +128,10 @@ function clickTab(event)
 		var type = name.substr( 'tab-doc-'.length );
 		showDocuments(type);
 	}
+	else if (name === 'tab-links')
+	{
+		showGraph();
+	}
 	else
 	{
 		$('#content').empty();
