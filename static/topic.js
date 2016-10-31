@@ -164,7 +164,7 @@ function showKeywords(type)
 			var radioNo = radio( kw.word, 'no', changeRank, isIrrelevant(kw) );
 			var loadingImg = image( 'loading-' + kw.word, '/static/pageloader.gif', 16, 16, 'hidden')
 			var br = $('<br>');
-			elements.push( radioYes, radioNo, kw.word, loadingImg, br );
+			elements.push( radioYes, radioNo, kw.word + ' -- ' + kw.ourFreq, loadingImg, br );
 		}
 		$('#content').empty();
 		$('#content').append(elements);

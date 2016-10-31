@@ -89,6 +89,8 @@ def fromUrl(url):
 		return spidermodel.Document({'url':url, 'wordFreq':dict(counts), 'links':links, 'status': 'fetched', 'score':0})
 	except urllib.error.HTTPError:
 		return spidermodel.Document({'url':url, 'wordFreq':{},'links':[],'status':'failed-http'})
+	except ssl.CertificateError:
+		return spidermodel.Document({'url':url, 'wordFreq':{},'links':[],'status':'failed-cert'})
 
 def visit(url):
 	if spidermodel.hasDocument(url):
@@ -158,7 +160,7 @@ def addKeywordScores(doc):
 	listResult = []
 	for word in doc.wordFreq:
 		score = keywordScore(doc.wordFreq[word], spidermodel.corpusFreq(word)) * multiplier
-		spidermodel.addKeywordScore(word,score)
+		spidermodel.addKeywordScore(word,score,doc.wordFreq[word])
 
 def recalculateKeywordFrequencies():
 	spidermodel.resetScoresToZero()
@@ -191,7 +193,8 @@ def wordInfo(word,freq,wordCount):
 	relevance = spidermodel.relevance(word)
 	contribution = freq * relevance / wordCount
 	corpusFreq = spidermodel.corpusFreq(word)
-	return {'word':word,'docFreq':freq,'corpusFreq':corpusFreq,'relevance':relevance,'contribution':contribution,'wordScore':keywordScore(freq,corpusFreq)}
+	ourFreq = spidermodel.ourFreq(word)
+	return {'word':word,'docFreq':freq,'corpusFreq':corpusFreq,'relevance':relevance,'contribution':contribution,'ourFreq':ourFreq,'wordScore':freq/(ourFreq+1)}
 
 def docInfo(url):
 	doc = spidermodel.getDocument(url)

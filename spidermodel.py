@@ -21,12 +21,16 @@ class Keyword:
 			self.relevance = data['relevance']
 		else:
 			self.relevance = None
+		if 'ourFreq' in data:
+			self.ourFreq = data['ourFreq']
+		else:
+			self.ourFreq = 0
 
 	def __lt__(self, other):
 		return self.score > other.score
 
 	def toDict(self):
-		data = {'word':self.word, 'score':self.score}
+		data = {'word':self.word, 'score':self.score, 'ourFreq':self.ourFreq}
 		if self.relevance != None:
 			data['relevance'] = self.relevance
 		return data
@@ -34,12 +38,14 @@ class Keyword:
 def resetScoresToZero():
 	for kw in keywords.values():
 		kw.score = 0
+		kw.ourFreq = 0
 
-def addKeywordScore(word,score):
+def addKeywordScore(word,score,ourFreq):
 	if word not in keywords:
-		keywords[word] = Keyword({'score':score,'word':word})
+		keywords[word] = Keyword({'score':score,'word':word,'ourFreq':ourFreq})
 	else:
 		keywords[word].score += score
+		keywords[word].ourFreq += ourFreq
 
 def topKeywords( count, relevancePred ):
 	return [ kw for kw in sorted(keywords.values()) if relevancePred(kw.relevance) ][0:count]
@@ -148,6 +154,11 @@ def setCorpusFreqs(freqs):
 def corpusFreq(word):
 	if word in corpus:
 		return corpus[word]
+	return 0
+
+def ourFreq(word):
+	if word in keywords:
+		return keywords[word].ourFreq
 	return 0
 
 def storeCorpusData():
