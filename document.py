@@ -75,7 +75,7 @@ def fromUrl(url):
 			if acceptToken(token):
 				counts[token.lower()] += 1
 		links = soupLinks(soup,url)
-		return spidermodel.Document({'url':url, 'wordFreq':dict(counts), 'links':links, 'status': 'fetched'})
+		return spidermodel.Document({'url':url, 'wordFreq':dict(counts), 'links':links, 'status': 'fetched', 'score':0})
 	except urllib.error.HTTPError:
 		return spidermodel.Document({'url':url, 'wordFreq':{},'links':[],'status':'failed-http'})
 
@@ -85,6 +85,7 @@ def visit(url):
 
 	print('Visiting ' + url)
 	doc = fromUrl(url)
+	recalculateDocScore(doc)
 	spidermodel.putDocument(doc)
 	addKeywordScores(doc)
 	spidermodel.storeKeywordData()
@@ -101,27 +102,14 @@ class ScoredUrl:
 	def toDict(self):
 		return {'score':self.score, 'url':self.url}
 
-def docScore(doc):
-	wordCount = sum(doc.wordFreq.values())
-	if wordCount == 0:
-		return 0
-	score = 0
-	for word in doc.wordFreq:
-		freq = doc.wordFreq[word]
-		score += freq * spidermodel.relevance(word)
-	return score / wordCount
-
-def scoreDocument(doc):
-	return ScoredUrl( doc.url, docScore(doc) )
-
 def visitedDocumentsWithScores(count):
-	return sorted( [scoreDocument(doc) for doc in spidermodel.allDocuments()] )[0:count]
+	return sorted( [ScoredUrl(doc.url,doc.score) for doc in spidermodel.allDocuments()] )[0:count]
 
 def unvisitedUrlsWithScores(count):
 	urlScores = {}
 	visitedUrls = set([doc.url for doc in spidermodel.allDocuments()])
 	for doc in spidermodel.allDocuments():
-		score = docScore(doc)
+		score = doc.score
 		for url in doc.links:
 			if url in visitedUrls:
 				pass
@@ -129,7 +117,7 @@ def unvisitedUrlsWithScores(count):
 				urlScores[url] = max(urlScores[url], score)
 			else:
 				urlScores[url] = score
-	return sorted( [ScoredUrl(url, urlScores[url]) for url in urlScores] )
+	return sorted( [ScoredUrl(url, urlScores[url]) for url in urlScores] )[0:count]
 
 def obtainKeywordData(url):
 	print('Downloading')
@@ -150,10 +138,10 @@ def addKeywordScores(doc):
 	if len(spidermodel.allDocuments()) <= 1:
 		multiplier = 1
 	else:
-		multiplier = docScore(doc)
+		multiplier = doc.score
 	listResult = []
 	for word in doc.wordFreq:
-		score = doc.wordFreq[word] * multiplier / (spidermodel.corpusFreq(word) + 1)
+		score = doc.wordFreq[word] * multiplier / (spidermodel.corpusFreq(word) + 3)
 		spidermodel.addKeywordScore(word,score)
 
 def recalculateKeywordFrequencies():
@@ -162,3 +150,20 @@ def recalculateKeywordFrequencies():
 		addKeywordScores(doc)
 	spidermodel.storeKeywordData()
 	print('Keyword frequencies were recalculated.')
+
+def recalculateDocumentScores():
+	for doc in spidermodel.allDocuments():
+		recalculateDocScore(doc)
+	spidermodel.storeDocData()
+	print('Document scores were recalculated.')
+
+def recalculateDocScore(doc):
+	wordCount = sum(doc.wordFreq.values())
+	if wordCount == 0:
+		return 0
+	score = 0
+	for word in doc.wordFreq:
+		freq = doc.wordFreq[word]
+		score += freq * spidermodel.relevance(word)
+	doc.score = score / wordCount
+

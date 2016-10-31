@@ -86,6 +86,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 
 	def stopSpiderAndRecalculate(s):
 		engine.stopSpider()
+		document.recalculateDocumentScores()
 		document.recalculateKeywordFrequencies()
 		s.send_response(200)
 		s.send_header("Content-type", "application/json")
@@ -124,7 +125,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 	def getKeywords(s, relevanceType):
 		s.forJson()
 		keywords = spidermodel.topKeywords(100, relevanceFunc(relevanceType))
-		jsonText = json.dumps( [ kw.toDictWithoutScore() for kw in keywords ] )
+		jsonText = json.dumps( [ kw.toDict() for kw in keywords ] )
 		s.writeln(jsonText)
 
 def start():
@@ -133,6 +134,7 @@ def start():
 	try:
 		httpd.serve_forever()
 	except KeyboardInterrupt:
+		engine.stopSpider()
 		print('Quit')
 		pass
 

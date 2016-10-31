@@ -25,17 +25,8 @@ class Keyword:
 	def __lt__(self, other):
 		return self.score < other.score
 
-	def __repr__(self):
-		return self.word + ':' + str(self.relevance) + ':' + str(self.score)
-
 	def toDict(self):
-		data = {'score':self.score, 'word':self.word}
-		if self.relevance != None:
-			data['relevance'] = self.relevance
-		return data
-
-	def toDictWithoutScore(self):
-		data = {'word':self.word}
+		data = {'word':self.word, 'score':self.score}
 		if self.relevance != None:
 			data['relevance'] = self.relevance
 		return data
@@ -103,8 +94,13 @@ class Document:
 		else:
 			self.status = 'fetched'
 
+		if 'score' in data:
+			self.score = data['score']
+		else:
+			self.score = 0
+
 	def toDict(self):
-		return {'url':self.url,'wordFreq':self.wordFreq,'links':self.links,'status':self.status}
+		return {'url':self.url,'wordFreq':self.wordFreq,'links':self.links,'status':self.status,'score':self.score}
 
 def storeDocData():
 	if not os.path.exists('data'):
