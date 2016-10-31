@@ -9,8 +9,10 @@
 <input id="spider-url" type="text" size=50>
 <input type="button" onclick="spider()" value="Start spider">
 <input type="button" onclick="resumeSpider()" value="Resume spider">
+<input type="button" onclick="resumePolling()" value="Resume polling">
 <input type="button" onclick="stopSpider()" value="Stop spider">
-<input type="button" onclick="recalculateKeywordFrequencies()" value="Recalculate keyword frequencies">
+<input type="button" onclick="recalculateKeywordFrequencies()" value="Recalculate keyword frequencies"><br>
+<span id="status"></span>
 <h1>Which topics are relevant?</h1>
 <div>
 Currently marked as:

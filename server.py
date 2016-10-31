@@ -28,6 +28,9 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 			s.getKeywords( s.path[len('/v1/keywords/'):] )
 		if s.path.startswith('/v1/documents/'):
 			s.getDocuments( s.path[len('/v1/documents/'):] )
+		if s.path == '/v1/spider/status':
+			s.spiderStatus()
+
 		if s.path == '/':
 			s.path = '/static/index.html'
 			return http.server.SimpleHTTPRequestHandler.do_GET(s)
@@ -56,6 +59,15 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 			raise ValueError('Unrecognized document type: ' + str(docType) )
 		s.forJson()
 		jsonText = json.dumps( [doc.toDict() for doc in docs] )
+		s.writeln(jsonText)
+
+	def spiderStatus(s):
+		status = engine.status()
+		running = engine.isRunning()
+		s.send_response(200)
+		s.send_header("Content-type", "application/json")
+		s.end_headers()
+		jsonText = json.dumps( {'status':status, 'running':running} )
 		s.writeln(jsonText)
 
 	def resumeSpider(s):

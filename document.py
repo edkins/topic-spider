@@ -62,19 +62,22 @@ def robotOk(url):
 	return rp.can_fetch('topic-spider', url)
 
 def fromUrl(url):
-	print('Processing ' + url)
-	if not robotOk(url):
-		raise ValueError('Fails robots.txt check: ' + url)
-	html = urllib.request.urlopen(url).read().decode('utf-8')
-	soup = bs4.BeautifulSoup(html,'html.parser')
-	text = ' '.join(buildSoupString(soup,0).split())
-	tokens = nltk.word_tokenize(text)
-	counts = collections.Counter()
-	for token in tokens:
-		if acceptToken(token):
-			counts[token.lower()] += 1
-	links = soupLinks(soup,url)
-	return spidermodel.Document({'url':url, 'wordFreq':dict(counts), 'links':links})
+	try:
+		print('Processing ' + url)
+		if not robotOk(url):
+			return spidermodel.Document({'url':url,'wordFreq':{},'links':[],'status':'failed-robots'})
+		html = urllib.request.urlopen(url).read().decode('utf-8')
+		soup = bs4.BeautifulSoup(html,'html.parser')
+		text = ' '.join(buildSoupString(soup,0).split())
+		tokens = nltk.word_tokenize(text)
+		counts = collections.Counter()
+		for token in tokens:
+			if acceptToken(token):
+				counts[token.lower()] += 1
+		links = soupLinks(soup,url)
+		return spidermodel.Document({'url':url, 'wordFreq':dict(counts), 'links':links, 'status': 'fetched'})
+	except urllib.error.HTTPError:
+		return spidermodel.Document({'url':url, 'wordFreq':{},'links':[],'status':'failed-http'})
 
 def visit(url):
 	if spidermodel.hasDocument(url):
@@ -85,6 +88,7 @@ def visit(url):
 	spidermodel.putDocument(doc)
 	addKeywordScores(doc)
 	spidermodel.storeKeywordData()
+	return doc
 
 class ScoredUrl:
 	def __init__(self, url, score):

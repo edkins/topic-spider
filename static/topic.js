@@ -1,3 +1,5 @@
+var polling = undefined;
+
 function changeRank(event)
 {
 	var action = event.target.value;
@@ -115,6 +117,7 @@ function spider()
 		'content-type': 'application/json',
 		'data': json
 	});
+	resumePolling();
 }
 
 function resumeSpider()
@@ -124,6 +127,7 @@ function resumeSpider()
 		'content-type': 'application/json',
 		'data': '{}'
 	});
+	resumePolling();
 }
 
 function stopSpider()
@@ -143,3 +147,32 @@ function recalculateKeywordFrequencies()
 		'data': '{}'
 	});
 }
+
+function poll()
+{
+	$.ajax('/v1/spider/status').then( response => {
+		$('#status').text( response.status );
+		if (!response.running)
+		{
+			stopPolling();
+		}
+	});
+}
+
+function resumePolling()
+{
+	if (polling == undefined)
+	{
+		polling = window.setInterval( poll, 500 );
+	}
+}
+
+function stopPolling()
+{
+	if (polling != undefined)
+	{
+		window.clearInterval(polling);
+		polling = undefined;
+	}
+}
+

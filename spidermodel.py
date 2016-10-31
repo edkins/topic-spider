@@ -98,9 +98,13 @@ class Document:
 		self.url = data['url']
 		self.wordFreq = data['wordFreq']
 		self.links = data['links']
+		if 'status' in data:
+			self.status = data['status']
+		else:
+			self.status = 'fetched'
 
 	def toDict(self):
-		return {'url':self.url,'wordFreq':self.wordFreq,'links':self.links}
+		return {'url':self.url,'wordFreq':self.wordFreq,'links':self.links,'status':self.status}
 
 def storeDocData():
 	if not os.path.exists('data'):
