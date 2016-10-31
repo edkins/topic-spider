@@ -1,0 +1,8 @@
+span.tab.active {
+	color: red;
+}
+
+span.tab {
+	color: blue;
+	cursor: pointer;
+}

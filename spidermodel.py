@@ -24,15 +24,18 @@ class Keyword:
 			data['relevance'] = self.relevance
 		return data
 
+	def toDictWithoutScore(self):
+		data = {'word':self.word}
+		if self.relevance != None:
+			data['relevance'] = self.relevance
+		return data
+
 def addScoredKeywords( newKeywords ):
 	"Add (score,keyword) pairs. A lower score is listed first."
 	keywords.extend( [Keyword({'score':score,'word':word}) for (score,word) in newKeywords] )
 
-def topKeywords( count ):
-	return sorted(keywords)[0:count]
-
-def topUnrankedKeywords( count ):
-	return [ kw for kw in sorted(keywords) if kw.relevance == None ]
+def topKeywords( count, relevancePred ):
+	return [ kw for kw in sorted(keywords) if relevancePred(kw.relevance) ][0:count]
 
 def setRelevance( name, relevance ):
 	for kw in keywords:

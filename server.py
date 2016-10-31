@@ -8,13 +8,25 @@ def radio(name,value,onchange):
 def image(id,src,width,height,visibility):
 	return '<image id="' + id + '"src="' + src + '" width="' + str(width) + '" height="' + str(height) + '" style="visibility:' + visibility + '">'
 
+def relevanceFunc(relevanceType):
+	if relevanceType == 'unranked':
+		return lambda r: r == None
+	if relevanceType == 'relevant':
+		return lambda r: r != None and r >= 0.5
+	if relevanceType == 'irrelevant':
+		return lambda r: r != None and r < 0.5
+	raise ValueError('Unrecognized relevance type: ' + str(relevanceType) )
+
 class MyHandler(http.server.SimpleHTTPRequestHandler):
 	def writeln(s,line):
 		s.wfile.write((line+'\n').encode('utf-8'))
 
 	def do_GET(s):
-		if s.path == '/unrankedKeywords':
-			s.getUnrankedKeywords()
+		if s.path.startswith('/v1/keywords/'):
+			s.getKeywords( s.path[len('/v1/keywords/'):] )
+		if s.path == '/':
+			s.path = '/static/index.html'
+			return http.server.SimpleHTTPRequestHandler.do_GET(s)
 		if s.path.startswith('/static'):
 			return http.server.SimpleHTTPRequestHandler.do_GET(s)
 
@@ -31,28 +43,26 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 		s.end_headers()
 		s.writeln('{}')
 
-	def getUnrankedKeywords(s):
-		s.send_response(200)
-		s.send_header("Content-type", "text/html")
+	def noCache(s):
 		s.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
 		s.send_header("Pragma", "no-cache")
 		s.send_header("Expires", "0")
+
+	def getKeywords(s, relevanceType):
+		s.send_response(200)
+		s.noCache()
+		s.send_header("Content-type", "application/json")
 		s.end_headers()
-		s.writeln('<html>')
-		s.writeln('<head>')
-		s.writeln('<script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>')
-		s.writeln('<script src="/static/topic.js"></script>')
-		s.writeln('</head>')
-		s.writeln('<body>')
-		s.writeln('<h1>Which topics are relevant?</h1>')
-		s.writeln('yes/no<br>')
-		keywords = spidermodel.topUnrankedKeywords(100)
-		for keyword in keywords:
-			s.writeln(radio(keyword.word,'yes','changeRank(event)') + radio(keyword.word,'no','changeRank(event)') +' ' + keyword.word + image('loading-' + keyword.word, '/static/pageloader.gif',16,16,'hidden') + '<br>')
-		s.writeln('</body></html>')
+		keywords = spidermodel.topKeywords(100, relevanceFunc(relevanceType))
+		jsonText = json.dumps( [ kw.toDictWithoutScore() for kw in keywords ] )
+		s.writeln(jsonText)
 
 def start():
 	print('Starting server!')
 	httpd = http.server.HTTPServer( ('localhost', 8080), MyHandler )
-	httpd.serve_forever()
+	try:
+		httpd.serve_forever()
+	except KeyboardInterrupt:
+		print('Quit')
+		pass
 
