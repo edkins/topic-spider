@@ -27,14 +27,14 @@ def acceptToken(token):
 
 # Filter out urls which look like they're pointing to the wrong kind of thing
 def suspiciousQuery(query):
-	return 'action=' in query or 'oldid=' in query or 'printable=' in query or 'Special:' in query
+	return 'action=' in query or 'oldid=' in query or 'printable=' in query or 'Special:' in query or 'u=http' in query
 
 def suspiciousPath(path):
-	return 'Special:' in path
+	return 'Special:' in path or '/photos/' in path or '.pdf' in path or '.doc' in path or '.xls' in path
 
 def urlOk(url):
 	parsed = urllib.parse.urlparse(url)
-	return not suspiciousQuery( parsed.query ) and not suspiciousPath(parsed.path)
+	return not parsed.scheme == 'mailto' and not suspiciousQuery( parsed.query ) and not suspiciousPath(parsed.path)
 
 def tidyUrl(url, baseUrl):
 	parsedBase = urllib.parse.urlparse(baseUrl)

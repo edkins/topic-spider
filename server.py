@@ -55,7 +55,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 
 	def getLinks(s):
 		s.forJson()
-		jsonText = json.dumps(document.links(0.01))
+		jsonText = json.dumps(document.links(0.005))
 		s.writeln(jsonText)
 
 	def getDocInfo(s):
