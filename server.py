@@ -40,6 +40,8 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 	def do_POST(s):
 		if s.path == '/v1/relevance':
 			s.setRelevance()
+		elif s.path == '/v1/docinfo':
+			s.getDocInfo()
 		elif s.path == '/v1/spider/visit':
 			s.spider()
 		elif s.path == '/v1/spider/resume':
@@ -48,6 +50,15 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 			s.stopSpider()
 		elif s.path == '/v1/spider/stopAndRecalculate':
 			s.stopSpiderAndRecalculate()
+
+	def getDocInfo(s):
+		length = int(s.headers['content-length'])
+		request = json.loads(s.rfile.read(length).decode('utf-8'))
+		jsonText = json.dumps(document.docInfo(request['url']))
+		s.send_response(200)
+		s.send_header("Content-type", "application/json")
+		s.end_headers()
+		s.writeln(jsonText)
 
 	def getDocuments(s, docType):
 		docs = []

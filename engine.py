@@ -38,7 +38,7 @@ def visitNext():
 		return False
 	url = urls[0].url
 	doc = document.visit(url)
-	setStatus(doc.status + ' ' + url)
+	setStatus(doc.status + ' ' + '{0:.2f}'.format(doc.score) + ' ' + url)
 	return True
 
 def stopSpider():

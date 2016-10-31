@@ -23,7 +23,7 @@ class Keyword:
 			self.relevance = None
 
 	def __lt__(self, other):
-		return self.score < other.score
+		return self.score > other.score
 
 	def toDict(self):
 		data = {'word':self.word, 'score':self.score}
@@ -124,6 +124,12 @@ def hasDocument(url):
 def putDocument(doc):
 	documents[doc.url] = doc
 	storeDocData()
+
+def getDocument(url):
+	try:
+		return documents[url]
+	except KeyError:
+		return Document({'url':url,'wordFreq':{},'links':[],'status':'never visited'})
 
 def allDocuments():
 	return documents.values()

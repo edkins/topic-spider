@@ -1,12 +1,10 @@
 var polling = undefined;
 
-function changeRank(event)
+function changeRankOf(name,action)
 {
-	var action = event.target.value;
-	var name = event.target.name;
 	var relevance = (action == 'yes') ? 1 : 0;
-	$('#loading-'+name).css('visibility','visible');
 	var json = JSON.stringify( [{name:name, relevance:relevance}] );
+	$('#loading-'+name).css('visibility','visible');
 	$.ajax('/v1/relevance', {
 		'method':'post',
 		'content-type':'application/json',
@@ -14,6 +12,19 @@ function changeRank(event)
 	}).then( response => {
 		$('#loading-'+name).css('visibility','hidden')
 	});
+}
+
+function changeRank(event)
+{
+	var action = event.target.value;
+	var name = event.target.name;
+	changeRankOf(name,action);
+}
+
+function changeRankToYes(event)
+{
+	var name = $(event.target).data('name');
+	changeRankOf(name,'yes');
 }
 
 function radio(name, value, onchange, selected)
@@ -39,6 +50,56 @@ function image(name, src, width, height, visibility)
 	return result;
 }
 
+function clickableSpan(text,onclick,name)
+{
+	var result = $('<span></span>');
+	result.on('click',onclick);
+	result.css('cursor','pointer');
+	result.data('name',name);
+	result.append(text);
+	return result
+}
+
+function button(text,onclick,name)
+{
+	var result = $('<input type="button">');
+	result.attr('value', text);
+	result.on('click', onclick);
+	result.data('name',name);
+	return result;
+}
+
+function clickDoc(event)
+{
+	var url = $(event.target).data('name');
+	var json = JSON.stringify({url:url});
+	$.ajax('v1/docinfo', {
+		'method': 'post',
+		'content-type': 'application/json',
+		'data': json
+	}).then( response => {
+		elements = [];
+		elements.push( response.url );
+		elements.push( $('<br>') );
+		elements.push( 'Word count: ' + response.wordCount );
+		elements.push( $('<br>') );
+		response.words.sort( (a,b) => (b.contribution - a.contribution) * 1000000000 + b.wordScore - a.wordScore );
+		for (var i = 0; i < response.words.length; i++)
+		{
+			var word = response.words[i];
+			if (word.relevance < 0.5)
+			{
+				elements.push( button('+', changeRankToYes, word.word ) );
+			}
+			elements.push( word.contribution.toFixed(5) + ' ' + word.word );
+			elements.push( $('<br>') );
+		}
+		$('#content').empty();
+		$('#content').append(elements);
+	});
+	noTab();
+}
+
 function isRelevant(kw)
 {
 	return kw.relevance != null && kw.relevance >= 0.5;
@@ -47,6 +108,11 @@ function isRelevant(kw)
 function isIrrelevant(kw)
 {
 	return kw.relevance != null && kw.relevance < 0.5;
+}
+
+function noTab()
+{
+	$('.tab').removeClass('active');
 }
 
 function clickTab(event)
@@ -77,7 +143,9 @@ function showDocuments(type)
 		for (var i = 0; i < response.length; i++)
 		{
 			var doc = response[i];
-			elements.push( doc.url + ' ' + doc.score );
+			var url = doc.url;
+			elements.push( doc.score.toFixed(2) + ' ' );
+			elements.push( clickableSpan( url, clickDoc, url ) );
 			elements.push( $('<br>') );
 		}
 		$('#content').empty();

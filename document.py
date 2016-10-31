@@ -26,22 +26,31 @@ def acceptToken(token):
 
 # Filter out urls which look like they're pointing to the wrong kind of thing
 def suspiciousQuery(query):
-	return 'action=' in query
+	return 'action=' in query or 'oldid=' in query or 'printable=' in query or 'Special:' in query
+
+def suspiciousPath(path):
+	return 'Special:' in path
+
+def urlOk(url):
+	parsed = urllib.parse.urlparse(url)
+	return not suspiciousQuery( parsed.query ) and not suspiciousPath(parsed.path)
 
 def tidyUrl(url, baseUrl):
 	parsedBase = urllib.parse.urlparse(baseUrl)
 	parsed = urllib.parse.urlparse(url)
 	if not parsed.path:
 		return None
-	if suspiciousQuery(parsed.query):
-		return None
-	return urllib.parse.urlunparse((
+	result = urllib.parse.urlunparse((
 		parsed.scheme or parsedBase.scheme,
 		parsed.netloc or parsedBase.netloc,
 		parsed.path,
 		parsed.params,
 		parsed.query,
 		''))
+	if urlOk(result):
+		return result
+	else:
+		return None
 
 def soupLinks(soup, baseUrl):
 	result = []
@@ -64,6 +73,8 @@ def robotOk(url):
 def fromUrl(url):
 	try:
 		print('Processing ' + url)
+		if not urlOk(url):
+			return spidermodel.Document({'url':url,'wordFreq':{},'links':[],'status':'failed-url'})
 		if not robotOk(url):
 			return spidermodel.Document({'url':url,'wordFreq':{},'links':[],'status':'failed-robots'})
 		html = urllib.request.urlopen(url).read().decode('utf-8')
@@ -113,6 +124,8 @@ def unvisitedUrlsWithScores(count):
 		for url in doc.links:
 			if url in visitedUrls:
 				pass
+			elif not urlOk(url):
+				pass
 			elif url in urlScores:
 				urlScores[url] = max(urlScores[url], score)
 			else:
@@ -134,14 +147,17 @@ def obtainKeywordData(url):
 		if acceptToken(token):
 			counts[token.lower()] += 1
 
+def keywordScore( docFreq, corpusFreq ):
+	return docFreq / (corpusFreq + 10)
+
 def addKeywordScores(doc):
 	if len(spidermodel.allDocuments()) <= 1:
 		multiplier = 1
 	else:
-		multiplier = doc.score
+		multiplier = pow(doc.score, 2)
 	listResult = []
 	for word in doc.wordFreq:
-		score = doc.wordFreq[word] * multiplier / (spidermodel.corpusFreq(word) + 3)
+		score = keywordScore(doc.wordFreq[word], spidermodel.corpusFreq(word)) * multiplier
 		spidermodel.addKeywordScore(word,score)
 
 def recalculateKeywordFrequencies():
@@ -158,6 +174,10 @@ def recalculateDocumentScores():
 	print('Document scores were recalculated.')
 
 def recalculateDocScore(doc):
+	if not urlOk(doc.url):
+		doc.score = 0
+		doc.status = 'failed-url'
+		return
 	wordCount = sum(doc.wordFreq.values())
 	if wordCount == 0:
 		return 0
@@ -167,3 +187,14 @@ def recalculateDocScore(doc):
 		score += freq * spidermodel.relevance(word)
 	doc.score = score / wordCount
 
+def wordInfo(word,freq,wordCount):
+	relevance = spidermodel.relevance(word)
+	contribution = freq * relevance / wordCount
+	corpusFreq = spidermodel.corpusFreq(word)
+	return {'word':word,'docFreq':freq,'corpusFreq':corpusFreq,'relevance':relevance,'contribution':contribution,'wordScore':keywordScore(freq,corpusFreq)}
+
+def docInfo(url):
+	doc = spidermodel.getDocument(url)
+	wordCount = sum(doc.wordFreq.values())
+	words = [wordInfo(w, doc.wordFreq[w], wordCount) for w in doc.wordFreq]
+	return {'url':url,'status':doc.status,'words':words,'wordCount':wordCount}
