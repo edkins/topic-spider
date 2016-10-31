@@ -1,3 +1,7 @@
+import sys
+if sys.version_info[0] < 3:
+	raise ValueError('===> Try python3 <===')
+
 import urllib.request
 import nltk
 import collections
@@ -32,10 +36,11 @@ def corpusFrequencies():
 				counts[word.lower()] += 1
 	return counts
 
-def obtainData():
+def obtainCorpusData():
 	print('Processing corpus')
-	corpusFreq = corpusFrequencies()
+	spidermodel.setCorpusFreqs(corpusFrequencies())
 
+def obtainKeywordData():
 	print('Downloading')
 	html = urllib.request.urlopen('https://en.wikipedia.org/wiki/Effective_altruism').read().decode('utf-8')
 	print('Parsing html')
@@ -52,15 +57,19 @@ def obtainData():
 
 	listResult = []
 	for token in counts:
-		score = -counts[token] / (corpusFreq[token] + 1)
+		score = -counts[token] / (spidermodel.corpusFreq(token) + 1)
 		listResult.append((score, token))
 
 	print('Adding scored keywords to model.')
 	spidermodel.addScoredKeywords( listResult )
-	spidermodel.storeData()
 
-if not spidermodel.loadData():
-	obtainData()
+if not spidermodel.loadCorpusData():
+	obtainCorpusData()
+
+if not spidermodel.loadKeywordData():
+	obtainKeywordData()
+
+spidermodel.loadDocData()
 
 server.start()
 

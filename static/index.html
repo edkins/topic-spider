@@ -5,16 +5,17 @@
 <script src="/static/topic.js"></script>
 </head>
 <body onload="onload()">
+<h1>Spider</h1>
+<input id="spider-url" type="text" size=50>
+<input type="button" onclick="spider()" value="Start spider">
 <h1>Which topics are relevant?</h1>
 <div>
 Currently marked as:
-<span id="tab-unranked" class="tab active" onclick="clickTab(event)">unranked</span> | 
-<span id="tab-relevant" class="tab" onclick="clickTab(event)">relevant</span> | 
-<span id="tab-irrelevant" class="tab" onclick="clickTab(event)">irrelevant</span>
+<span id="tab-kw-unranked" class="tab active" onclick="clickTab(event)">unranked</span> | 
+<span id="tab-kw-relevant" class="tab" onclick="clickTab(event)">relevant</span> | 
+<span id="tab-kw-irrelevant" class="tab" onclick="clickTab(event)">irrelevant</span> |
+<span id="tab-doc-visited" class="tab" onclick="clickTab(event)">visited</span> 
 </div>
-<div>
-yes/no
-</div>
-<div id="keywords">
+<div id="content">
 </body>
 </html>

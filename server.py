@@ -1,6 +1,8 @@
 import http.server
 import spidermodel
 import json
+import engine
+import document
 
 def radio(name,value,onchange):
 	return '<input type="radio" name="' + name + '" value="' + value + '" onchange="'+onchange+'">'
@@ -24,6 +26,8 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 	def do_GET(s):
 		if s.path.startswith('/v1/keywords/'):
 			s.getKeywords( s.path[len('/v1/keywords/'):] )
+		if s.path.startswith('/v1/documents/'):
+			s.getDocuments( s.path[len('/v1/documents/'):] )
 		if s.path == '/':
 			s.path = '/static/index.html'
 			return http.server.SimpleHTTPRequestHandler.do_GET(s)
@@ -33,6 +37,27 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 	def do_POST(s):
 		if s.path == '/v1/relevance':
 			s.setRelevance()
+		elif s.path == '/v1/spider':
+			s.spider()
+
+	def getDocuments(s, docType):
+		docs = []
+		if docType == 'visited':
+			docs = document.visitedDocumentsWithScores(100)
+		else:
+			raise ValueError('Unrecognized document type: ' + str(docType) )
+		s.forJson()
+		jsonText = json.dumps( [doc.toDict() for doc in docs] )
+		s.writeln(jsonText)
+
+	def spider(s):
+		length = int(s.headers['content-length'])
+		request = json.loads(s.rfile.read(length).decode('utf-8'))
+		engine.startSpider(request)
+		s.send_response(200)
+		s.send_header("Content-type", "application/json")
+		s.end_headers()
+		s.writeln('{}')
 
 	def setRelevance(s):
 		length = int(s.headers['content-length'])
@@ -48,11 +73,14 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 		s.send_header("Pragma", "no-cache")
 		s.send_header("Expires", "0")
 
-	def getKeywords(s, relevanceType):
+	def forJson(s):
 		s.send_response(200)
 		s.noCache()
 		s.send_header("Content-type", "application/json")
 		s.end_headers()
+
+	def getKeywords(s, relevanceType):
+		s.forJson()
 		keywords = spidermodel.topKeywords(100, relevanceFunc(relevanceType))
 		jsonText = json.dumps( [ kw.toDictWithoutScore() for kw in keywords ] )
 		s.writeln(jsonText)

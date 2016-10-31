@@ -1,4 +1,7 @@
 garbage/
 __pycache__/
 *.swp
+data/corpus.json
+data/documents.json
 data/keywords.json
+keep/
