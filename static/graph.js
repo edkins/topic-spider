@@ -1,6 +1,8 @@
 var offsetx = 0;
 var offsety = 0;
 var sim = undefined;
+var expanded = {};
+var originalData = undefined;
 
 function findUrl( data, url )
 {
@@ -28,9 +30,12 @@ function translateUrl(url)
 	for (var i = 0; i < urlColours.length; i++)
 	{
 		var candidate = urlColours[i].name;
-		if (candidate !== '' && url.indexOf(candidate) != -1)
+		if (!expanded[candidate])
 		{
-			return candidate;
+			if (candidate !== '' && url.indexOf(candidate) != -1)
+			{
+				return candidate;
+			}
 		}
 	}
 	return url;
@@ -69,6 +74,7 @@ function site(url)
 
 function plotGraph(data)
 {
+	stopSim();
 	var w = $('svg').width();
 	var h = $('svg').height();
 
@@ -93,6 +99,7 @@ function plotGraph(data)
 	d3.select('svg').call(d3.drag().on('drag',drag));
 	sim = d3.forceSimulation( data ).on('tick', () => {
 		showNodes( data );
+		showEdges( [] );
 		showKey();
 	} ).on('end', () => {
 		showEdges( links );
@@ -183,7 +190,7 @@ function showEdges( links )
 
 function showKey()
 {
-	var circles = d3.select('#graph-key').selectAll('circle');
+	var circles = d3.select('#graph-key').selectAll('circle').on('click',toggleCollapse);
 	circles = circles.data( urlColours );
 	circles.enter().append('circle').attr( 'r', 2 );
 	circles.exit().remove();
@@ -210,6 +217,22 @@ function showGraph()
 	$('#content').append(svg);
 
 	$.ajax('/v1/links').then( (data) => {
+		originalData = data;
 		plotGraph(data);
 	});
+}
+
+function toggleCollapse(d)
+{
+	expanded[d.name] = !expanded[d.name];
+	window.setTimeout(() => plotGraph(originalData), 100);
+}
+
+function stopSim()
+{
+	if (sim != undefined)
+	{
+		sim.stop();
+		sim = undefined;
+	}
 }
