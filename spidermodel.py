@@ -1,6 +1,7 @@
 import os
 import json
 import document
+import urllib.parse
 
 keywords = {}
 documents = {}
@@ -89,6 +90,15 @@ def loadKeywordData():
 #
 #######################
 
+def escapedFilename(url):
+	try:
+		filename = urllib.parse.quote_plus(url)[0:128]
+		return 'data/documents/' + filename
+	except KeyError:
+		return None
+
+def unescapedUrl(filename):
+	return urllib.parse.unquote_plus(filename)
 
 class Document:
 	def __init__(self, data):
@@ -108,37 +118,34 @@ class Document:
 	def toDict(self):
 		return {'url':self.url,'wordFreq':self.wordFreq,'links':self.links,'status':self.status,'score':self.score}
 
-def storeDocData():
-	if not os.path.exists('data'):
-		os.mkdir('data')
-	jsonText = json.dumps([doc.toDict() for doc in documents.values()])
-	open('data/documents.json','w').write(jsonText)
-
-def loadDocData():
-	global documents
-	if not os.path.exists('data/documents.json'):
-		print('No document data file found')
-		return False
-	print('Loading document data')
-	data = json.load(open('data/documents.json'))
-	documents = {d['url']: Document(d) for d in data}
-	return True
-
 def hasDocument(url):
-	return url in documents
+	filename = escapedFilename(url)
+	if filename == None:
+		return False
+	return os.path.exists(filename)
 
 def putDocument(doc):
 	documents[doc.url] = doc
-	storeDocData()
+	filename = escapedFilename(doc.url)
+	if filename == None:
+		print('Cannot create file for ' + doc.url)
+		return
+	out = open(filename,'w')
+	json.dump( doc.toDict(), out )
+	out.close()
 
 def getDocument(url):
-	try:
-		return documents[url]
-	except KeyError:
+	filename = escapedFilename(url)
+	if filename != None and os.path.exists(filename):
+		f = open(filename)
+		result = Document(json.load(f))
+		f.close()
+		return result
+	else:
 		return Document({'url':url,'wordFreq':{},'links':[],'status':'never visited'})
 
-def allDocuments():
-	return documents.values()
+def allDocumentUrls():
+	return [unescapedUrl(name) for name in os.listdir('data/documents')]
 
 #######################
 #

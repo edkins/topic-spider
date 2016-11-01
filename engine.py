@@ -38,6 +38,9 @@ def visitNext():
 		return False
 	url = urls[0].url
 	doc = document.visit(url)
+	if doc == None:
+		setStatus('Oh we seem to already have visited ' + url)
+		return False
 	setStatus(doc.status + ' ' + '{0:.2f}'.format(doc.score) + ' ' + url)
 	return True
 

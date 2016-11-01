@@ -34,7 +34,7 @@ def suspiciousPath(path):
 
 def urlOk(url):
 	parsed = urllib.parse.urlparse(url)
-	return not parsed.scheme == 'mailto' and not suspiciousQuery( parsed.query ) and not suspiciousPath(parsed.path)
+	return (parsed.scheme == 'http' or parsed.scheme == 'https') and not suspiciousQuery( parsed.query ) and not suspiciousPath(parsed.path)
 
 def tidyUrl(url, baseUrl):
 	parsedBase = urllib.parse.urlparse(baseUrl)
@@ -101,7 +101,7 @@ def fromUrl(url):
 
 def visit(url):
 	if spidermodel.hasDocument(url):
-		return
+		return None
 
 	print('Visiting ' + url)
 	doc = fromUrl(url)
@@ -122,16 +122,20 @@ class ScoredUrl:
 	def toDict(self):
 		return {'score':self.score, 'url':self.url}
 
+def getScoredDocUrl(docUrl):
+	doc = spidermodel.getDocument(docUrl)
+	return ScoredUrl(doc.url,doc.score)
+
 def visitedDocumentsWithScores(count):
-	return sorted( [ScoredUrl(doc.url,doc.score) for doc in spidermodel.allDocuments()] )[0:count]
+	return sorted( [getScoredDocUrl(url) for url in spidermodel.allDocumentUrls()] )[0:count]
 
 def unvisitedUrlsWithScores(count):
 	urlScores = {}
-	visitedUrls = set([doc.url for doc in spidermodel.allDocuments()])
-	for doc in spidermodel.allDocuments():
+	for docUrl in spidermodel.allDocumentUrls():
+		doc = spidermodel.getDocument(docUrl)
 		score = doc.score
 		for url in doc.links:
-			if url in visitedUrls:
+			if spidermodel.hasDocument(url):
 				pass
 			elif not urlOk(url):
 				pass
@@ -160,7 +164,7 @@ def keywordScore( docFreq, corpusFreq ):
 	return docFreq / (corpusFreq + 10)
 
 def addKeywordScores(doc):
-	if len(spidermodel.allDocuments()) <= 1:
+	if len(spidermodel.allDocumentUrls()) <= 1:
 		multiplier = 1
 	else:
 		multiplier = pow(doc.score, 2)
@@ -171,15 +175,17 @@ def addKeywordScores(doc):
 
 def recalculateKeywordFrequencies():
 	spidermodel.resetScoresToZero()
-	for doc in spidermodel.allDocuments():
+	for docUrl in spidermodel.allDocumentUrls():
+		doc = spidermodel.getDocument(docUrl)
 		addKeywordScores(doc)
 	spidermodel.storeKeywordData()
 	print('Keyword frequencies were recalculated.')
 
 def recalculateDocumentScores():
-	for doc in spidermodel.allDocuments():
+	for docUrl in spidermodel.allDocumentUrls():
+		doc = spidermodel.getDocument(docUrl)
 		recalculateDocScore(doc)
-	spidermodel.storeDocData()
+		spidermodel.putDocument(doc)
 	print('Document scores were recalculated.')
 
 def recalculateDocScore(doc):
@@ -212,5 +218,10 @@ def docInfo(url):
 def goodlinks(doc,minScore):
 	return [url for url in doc.links if spidermodel.getDocument(url).score > minScore]
 
+def linksForDocUrl(docUrl):
+	doc = spidermodel.getDocument(url)
+	return {'url':doc.url,'score':doc.score,'links':goodlinks(doc,minScore)}
+
 def links(minScore):
-	return [{'url':doc.url,'score':doc.score,'links':goodlinks(doc,minScore)} for doc in spidermodel.allDocuments() if doc.score > minScore]
+	unfiltered = [linksForDocUrl(url) for url in spidermodel.allDocumentUrls()]
+	return [doc for doc in unfiltered if doc.score > minScore]

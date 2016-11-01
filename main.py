@@ -44,7 +44,6 @@ if not spidermodel.loadCorpusData():
 	obtainCorpusData()
 
 spidermodel.loadKeywordData()
-spidermodel.loadDocData()
 
 server.start()
 
