@@ -6,6 +6,8 @@ import nltk
 import bs4
 import spidermodel
 import ssl
+import cProfile
+import heapq
 
 def buildSoupString(soup, indent):
 	result = ''
@@ -129,21 +131,31 @@ def getScoredDocUrl(docUrl):
 def visitedDocumentsWithScores(count):
 	return sorted( [getScoredDocUrl(url) for url in spidermodel.allDocumentUrls()] )[0:count]
 
+def site(url):
+	return urllib.parse.urlparse(url).netloc
+
+def siteCounts(allUrls):
+	result = collections.Counter()
+	for docUrl in allUrls:
+		result[site(docUrl)] += 1
+	return result
+
 def unvisitedUrlsWithScores(count):
 	urlScores = {}
-	for docUrl in spidermodel.allDocumentUrls():
+	allUrls = set(spidermodel.allDocumentUrls())
+	counts = siteCounts(allUrls)
+	for docUrl in allUrls:
 		doc = spidermodel.getDocument(docUrl)
-		score = doc.score
+		score = doc.score / (counts[site(docUrl)] + 1)
 		for url in doc.links:
-			if spidermodel.hasDocument(url):
-				pass
-			elif not urlOk(url):
+			if url in allUrls:
 				pass
 			elif url in urlScores:
 				urlScores[url] = max(urlScores[url], score)
 			else:
 				urlScores[url] = score
-	return sorted( [ScoredUrl(url, urlScores[url]) for url in urlScores] )[0:count]
+	#return sorted( [ScoredUrl(url, urlScores[url]) for url in urlScores if urlOk(url)] )[0:count]
+	return heapq.nsmallest( 100, [ScoredUrl(url, urlScores[url]) for url in urlScores if urlOk(url)] )
 
 def obtainKeywordData(url):
 	print('Downloading')
@@ -215,13 +227,18 @@ def docInfo(url):
 	words = [wordInfo(w, doc.wordFreq[w], wordCount) for w in doc.wordFreq]
 	return {'url':url,'status':doc.status,'words':words,'wordCount':wordCount}
 
-def goodlinks(doc,minScore):
-	return [url for url in doc.links if spidermodel.getDocument(url).score > minScore]
+def goodlinks(allScores,doc,minScore):
+	if doc.score > minScore:
+		return [url for url in doc.links if url in allScores and allScores[url] > minScore]
+	else:
+		return []
 
-def linksForDocUrl(docUrl):
-	doc = spidermodel.getDocument(url)
-	return {'url':doc.url,'score':doc.score,'links':goodlinks(doc,minScore)}
+def linksForDocUrl(allScores,docUrl,minScore):
+	doc = spidermodel.getDocument(docUrl)
+	return {'url':doc.url,'score':doc.score,'links':goodlinks(allScores,doc,minScore)}
 
 def links(minScore):
-	unfiltered = [linksForDocUrl(url) for url in spidermodel.allDocumentUrls()]
-	return [doc for doc in unfiltered if doc.score > minScore]
+	allScores = spidermodel.allScores()
+	unfiltered = [linksForDocUrl(allScores,url,minScore) for url in allScores.keys()]
+	print('Got unfiltered list of links')
+	return [doc for doc in unfiltered if doc['score'] > minScore]

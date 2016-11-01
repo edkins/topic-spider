@@ -19,11 +19,19 @@ function translateUrl(url)
 	url = url.toLowerCase();
 	if (url.startsWith('http://effectivealtruismhub.com'))
 	{
-		return 'http://eahub.org' + url.substr('http://effectivealtruismhub.com'.length);
+		url = 'http://eahub.org' + url.substr('http://effectivealtruismhub.com'.length);
 	}
 	if (url.startsWith('https://www.againstmalaria.com'))
 	{
-		return 'http://www.againstmalaria.com' + url.substr('https://www.againstmalaria.com'.length);
+		url = 'http://www.againstmalaria.com' + url.substr('https://www.againstmalaria.com'.length);
+	}
+	for (var i = 0; i < urlColours.length; i++)
+	{
+		var candidate = urlColours[i].name;
+		if (candidate !== '' && url.indexOf(candidate) != -1)
+		{
+			return candidate;
+		}
 	}
 	return url;
 }
@@ -35,16 +43,19 @@ function translateUrls(data)
 	for (var i = 0; i < data.length; i++)
 	{
 		var newUrl = translateUrl(data[i].url);
-		if (!urlsWeHave[newUrl])
+		var source = urlsWeHave[newUrl];
+		var originalLinks = data[i].links
+		if (source == undefined)
 		{
-			var source = data[i];
-			for (var j = 0; j < source.links.length; j++)
-			{
-				source.links[j] = translateUrl(source.links[j]);
-			}
-			source.url = newUrl;
+			source = {url:newUrl, score:0, linkSet:{}};
+			urlsWeHave[newUrl] = source;
 			newData.push(source);
-			urlsWeHave[newUrl] = true;
+		}
+		source.score = Math.max( source.score, data[i].score );
+		for (var j = 0; j < originalLinks.length; j++)
+		{
+			var translated = translateUrl(originalLinks[j]);
+			source.linkSet[translated] = true;
 		}
 	}
 	return newData;
@@ -66,14 +77,13 @@ function plotGraph(data)
 	for (var i = 0; i < data.length; i++)
 	{
 		var source = data[i];
-		for (var j = 0; j < source.links.length; j++)
+		for (var url in source.linkSet)
 		{
-			target = findUrl(data, source.links[j]);
+			target = findUrl(data, url);
 			if (target != undefined)
 			{
-				var twoWay = (target.links.indexOf(source) != -1);
-				var sameSite = (site(source.url) == site(target.url));
-				links.push( {source: source, target: target, twoWay: twoWay, sameSite: sameSite });
+				var twoWay = url in target.linkSet;
+				links.push( {source: source, target: target, twoWay: twoWay});
 			}
 		}
 		data[i].x = (data[i].url.indexOf('/',8) - 12) * w / 64;
@@ -86,7 +96,7 @@ function plotGraph(data)
 		showKey();
 	} ).on('end', () => {
 		showEdges( links );
-	} ).force('link', d3.forceLink(links).distance( d => d.twoWay ? 2 : 20 ) ).force('manyBody',d3.forceManyBody().strength(-0.7));
+	} ).force('link', d3.forceLink(links).distance( d => 15 ) ).force('manyBody',d3.forceManyBody().strength(-8));
 }
 
 function drag()
@@ -125,7 +135,7 @@ var urlColours = [
 	{"name":"imperial.ac.uk","colour":[255,160,0]},
 	{"name":"evidenceaction.org","colour":[255,160,0]},
 	{"name":"givedirectly.org","colour":[255,160,0]},
-	{"name":"","colour":[0,0,0]}
+	{"name":"","colour":[255,0,0]}
 ];
 
 function urlColour( url, score )
@@ -150,7 +160,8 @@ function showNodes( data )
 	circles.enter().append('circle').on('mouseover',mouseover);
 	circles.exit().remove();
 	circles = d3.select('#graph-circles').selectAll('circle');
-	circles.attr('r', d => d.url.indexOf('/',8) == d.url.length - 1 ? 3 : 1.5);
+	//circles.attr('r', d => d.url.indexOf('/',8) == d.url.length - 1 ? 3 : 1.5);
+	circles.attr('r', d => d.url.indexOf(':') == -1 ? 7 : 2 );
 	circles.attr('cx', d => offsetx + d.x);
 	circles.attr('cy', d => offsety + d.y);
 	circles.attr('fill', d => urlColour(d.url,d.score) );
@@ -163,7 +174,7 @@ function showEdges( links )
 	lines.enter().append('line').attr('stroke-width','0.1');
 	lines.exit().remove();
 	lines = d3.select('#graph-lines').selectAll('line');
-	lines.attr('stroke', d => d.sameSite ? 'rgba(128,128,128,0.01)' : 'rgba(128,128,128,0.03)');
+	lines.attr('stroke', d => 'rgba(128,128,128,0.2)');
 	lines.attr('x1', d => offsetx + d.source.x );
 	lines.attr('y1', d => offsety + d.source.y );
 	lines.attr('x2', d => offsetx + d.target.x );

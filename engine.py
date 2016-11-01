@@ -21,27 +21,30 @@ class SpiderThread(threading.Thread):
 		global spiderThread
 		setStatus('Fetching first url')
 		print('Starting spider thread')
-		while not self.killing and visitNext():
+		while not self.killing and visitNextFew(10):
 			time.sleep(0.5)
 		spiderThread = None
 
 	def killSpiderThread(self):
 		self.killing = True
 
-def visitNext():
-	urls = document.unvisitedUrlsWithScores(1)
+def visitNextFew(count):
+	setStatus('Finding next ' + str(count) + ' things')
+	urls = document.unvisitedUrlsWithScores(count)
+	print('Now have unvisited url list.')
 	if len(urls) < 1:
 		setStatus('Nothing left to spider.')
 		return False
-	if urls[0].score == 0:
-		setStatus('Nothing left to spider with a score greater than 0.')
-		return False
-	url = urls[0].url
-	doc = document.visit(url)
-	if doc == None:
-		setStatus('Oh we seem to already have visited ' + url)
-		return False
-	setStatus(doc.status + ' ' + '{0:.2f}'.format(doc.score) + ' ' + url)
+	for urlThing in urls:
+		if urlThing.score == 0:
+			setStatus('Nothing left to spider with a score greater than 0.')
+			return False
+		url = urlThing.url
+		doc = document.visit(url)
+		if doc == None:
+			setStatus('Oh we seem to already have visited ' + url)
+		else:
+			setStatus(doc.status + ' ' + '{0:.2f}'.format(doc.score) + ' ' + url)
 	return True
 
 def stopSpider():

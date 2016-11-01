@@ -2,10 +2,12 @@ import os
 import json
 import document
 import urllib.parse
+import threading
 
 keywords = {}
-documents = {}
 corpus = {}
+cachedUrls = None
+cachedUrlLock = threading.Lock()
 
 #######################
 #
@@ -97,9 +99,6 @@ def escapedFilename(url):
 	except KeyError:
 		return None
 
-def unescapedUrl(filename):
-	return urllib.parse.unquote_plus(filename)
-
 class Document:
 	def __init__(self, data):
 		self.url = data['url']
@@ -119,13 +118,10 @@ class Document:
 		return {'url':self.url,'wordFreq':self.wordFreq,'links':self.links,'status':self.status,'score':self.score}
 
 def hasDocument(url):
-	filename = escapedFilename(url)
-	if filename == None:
-		return False
-	return os.path.exists(filename)
+	return url in allDocumentUrls()
 
 def putDocument(doc):
-	documents[doc.url] = doc
+	global cachedUrls
 	filename = escapedFilename(doc.url)
 	if filename == None:
 		print('Cannot create file for ' + doc.url)
@@ -133,6 +129,8 @@ def putDocument(doc):
 	out = open(filename,'w')
 	json.dump( doc.toDict(), out )
 	out.close()
+	with cachedUrlLock:
+		cachedUrls[doc.url] = doc.score
 
 def getDocument(url):
 	filename = escapedFilename(url)
@@ -145,7 +143,34 @@ def getDocument(url):
 		return Document({'url':url,'wordFreq':{},'links':[],'status':'never visited'})
 
 def allDocumentUrls():
-	return [unescapedUrl(name) for name in os.listdir('data/documents')]
+	global cachedUrls
+	if cachedUrls == None:
+		cachedUrls = {}
+		for name in os.listdir('data/documents'):
+			f = open('data/documents/'+name)
+			obj = json.load(f)
+			url = obj['url']
+			with cachedUrlLock:
+				cachedUrls[url] = obj['score']
+			f.close()
+	with cachedUrlLock:
+		result = list(cachedUrls.keys())
+	return result
+
+def allScores():
+	global cachedUrls
+	allDocumentUrls()
+	with cachedUrlLock:
+		result = cachedUrls.copy()
+	return result
+
+def getDocScore(url):
+	allDocumentUrls()
+	result = 0
+	with cachedUrlLock:
+		if url in cachedUrls:
+			result = cachedUrls[url]
+	return result
 
 #######################
 #
