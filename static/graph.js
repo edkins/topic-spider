@@ -103,7 +103,10 @@ function plotGraph(data)
 		showKey();
 	} ).on('end', () => {
 		showEdges( links );
-	} ).force('link', d3.forceLink(links).distance( d => 15 ) ).force('manyBody',d3.forceManyBody().strength(-8));
+	} ).force('link', d3.forceLink(links).distance( d => 15 ) )
+		.force('manyBody',d3.forceManyBody().strength(-8))
+		.force('x',d3.forceX(w/2).strength(0.1))
+		.force('y',d3.forceY(h/2).strength(0.1));
 }
 
 function drag()

@@ -32,7 +32,7 @@ def suspiciousQuery(query):
 	return 'action=' in query or 'oldid=' in query or 'printable=' in query or 'Special:' in query or 'u=http' in query
 
 def suspiciousPath(path):
-	return 'Special:' in path or '/photos/' in path or '.pdf' in path or '.doc' in path or '.xls' in path
+	return 'Special:' in path or '/photos/' in path or '.pdf' in path or '.doc' in path or '.xls' in path or '.zip' in path
 
 def urlOk(url):
 	parsed = urllib.parse.urlparse(url)
